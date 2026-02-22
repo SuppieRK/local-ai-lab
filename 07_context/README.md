@@ -75,7 +75,9 @@ If you are using OpenCode, by [default OpenCode will use ripgrep][8].
 
 ### Rust Token Killer
 
-In progress
+In progress – waiting for:
+- https://github.com/rtk-ai/rtk/pull/225
+- Which is waiting for https://github.com/rtk-ai/rtk/pull/150
 
 ---
 
