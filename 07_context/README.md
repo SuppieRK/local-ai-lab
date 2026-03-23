@@ -28,22 +28,22 @@ flow. Everything else follows.
 
 ### More efficient data retrieval
 
-Context windows are limited, even with compression tricks and quantization. Expecting an LLM to remember everything is
-optimistic.
+Context windows are limited, and model-side compression does not eliminate retrieval problems. Expecting an LLM to
+remember everything is optimistic.
 
-By default, the LLM will leverage `grep` to locate relevant information in your codebase. You can modestly improve this
-with [ripgrep][1], which is faster and respects `.gitignore`, reducing noise and token waste.
+In practice, coding agents usually start with text search. If your stack exposes plain `grep`, switching to
+[ripgrep][1] is an easy upgrade: it is faster and respects `.gitignore`, which reduces noise and token waste.
 
 A further iteration is [ast-grep][2], which relies on [tree-sitter][3] to search via `Abstract Syntax Trees` (**ASTs**).
 Instead of matching text, it matches structure — occasionally a useful distinction.
 
-[Another approach][4], used by OpenCode, launches the appropriate `Language Server Protocol` (**LSP**) servers for your
-project and [exposes LSP features as a tool][5] to the LLM. Under the hood, this also leverages **ASTs**, but with
-broader language support and richer semantics. It is essentially what your IDE already knows.
+[Another approach][4], used by OpenCode, is to start the appropriate `Language Server Protocol` (**LSP**) servers for
+your project and [expose selected LSP features as a tool][5] to the LLM. That gives the model access to definitions,
+references, symbols, and diagnostics using the same language-aware analysis your editor already depends on.
 
-`Retrieval Augmented Generation` (**RAG**) is popular for documents. It works reasonably well for similarity search:
-split documents into chunks, embed them, store vectors, retrieve top-K matches via cosine similarity, and feed the "most
-relevant" fragments back into the model.
+`Retrieval Augmented Generation` (**RAG**) is popular for document-heavy workflows. A typical pipeline splits documents
+into chunks, embeds them, stores vectors, retrieves a small candidate set with similarity search, and feeds the most
+relevant fragments back into the model.
 
 This is generally better than shoving the entire corpus into context and hoping for the best. It also introduces
 chunking, the art of slicing documents precisely enough that embeddings behave as expected. Like most arts, it is easier
@@ -57,27 +57,31 @@ system.
 If a tool emits five screens of output when three lines would suffice, the model will ingest all of it. You will be
 billed for all of it. The model will reason about all of it.
 
-[Rust Token Killer][6] is a practical example of disciplined tooling. It filters and compresses command output before it
-reaches the LLM context, reducing token consumption by 60–90% on common operations.
+[CCP][6] is a practical example of disciplined tooling. It acts as a CLI proxy that compacts noisy terminal output
+before it reaches the LLM context, while preserving command behavior, exit codes, and critical diagnostics.
 
 ---
 
 ## Improving our stack
 
+For a practical baseline, add `ripgrep` first and `CCP` second. Reach for `ast-grep`, LSP-backed tooling, or RAG only
+when plain text search stops being good enough.
+
 ### ripgrep
 
-We have to have this tool since codebases will contain files that should be read fast and not represent the code (YAML,
-Markdown, JSON, etc.).
+We should have this tool because codebases contain plenty of material that still matters to the model but is not best
+handled by language-aware tooling alone: docs, config, JSON, YAML, shell scripts, and the usual debris.
 
 Thankfully, the [installation is straightforward][7].
 
 If you are using OpenCode, by [default OpenCode will use ripgrep][8].
 
-### Rust Token Killer
+### CCP
 
-In progress – waiting for:
-- https://github.com/rtk-ai/rtk/pull/225
-- Which is waiting for https://github.com/rtk-ai/rtk/pull/150
+CCP stands for `Command Compression Proxy`. You can run it directly as `ccp <command>` or use `ccp init` to wire it
+into supported coding agents while keeping their usual command shape. It preserves exit codes and critical diagnostics,
+falls back to native output for ambiguous or precision-sensitive cases, and gives you a way to measure the effect with
+`ccp gain`.
 
 ---
 
@@ -95,7 +99,7 @@ In progress – waiting for:
 
 [5]: https://opencode.ai/docs/tools/#lsp-experimental
 
-[6]: https://github.com/rtk-ai/rtk
+[6]: https://github.com/SuppieRK/ccp
 
 [7]: https://github.com/BurntSushi/ripgrep?tab=readme-ov-file#installation
 
