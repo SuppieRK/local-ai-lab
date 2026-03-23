@@ -2,13 +2,23 @@
 
 ## Table of Contents
 
+The notes start with setup basics, then move into the workflow layer: context, tools, and agents.
+
 - [Beginning](./01_beginning/README.md)
 - [Choosing LLM](./02_choosing_llm/README.md)
 - [LLM Settings](./03_llm_settings/README.md)
 - [Coding Agent](04_coding_agent/README.md)
 - [MCP](./05_mcp/README.md)
 - [Spec Driven Development](06_spec_driven_development/README.md)
+
+Workflow and agent-building topics:
+
 - [Context](./07_context/README.md)
+- [Prompt Engineering](./08_prompt_engineering/README.md)
+- [Context Engineering](./09_context_engineering/README.md)
+- [Skills](./10_skills/README.md)
+- [Tools](./11_tools/README.md)
+- [Agents](./12_agents/README.md)
 
 ## Introduction
 
@@ -20,12 +30,12 @@ reasonable idea (and a justification to my wife that spending money on that GPU 
 
 The problem: AI content overload. Everyone's setup seems to be like the kid my mom always compares me to.
 
-This repository exists to document what actually worked for me – without the hype cycle, affiliate links, or
-philosophical essays about "the future of intelligence."
+This repository exists to document what actually worked for me - from the home lab itself to the workflow built on top
+of it - without the hype cycle, affiliate links, or philosophical essays about "the future of intelligence."
 
 ## Goals
 
-- Focus on practical aspects of a home AI lab:
+- Focus on practical aspects of a home AI lab and the local workflows around it:
     - Use open-source software (because vendor lock-in for a hobby is unnecessary).
     - Offline capability (to maintain flexibility for a potential transition into a forest-based remote role).
 - Straightforward content without fluff (and hopefully as simple as possible).

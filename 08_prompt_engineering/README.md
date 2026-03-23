@@ -1,317 +1,338 @@
 # Prompt Engineering
 
-*Or: How to Convince a Stochastic Parrot to Do Deterministic Work*
+> Or: specification work with better branding.
 
-Prompt engineering is the practice of shaping model behavior through carefully structured input. It sounds mystical. It
-is not. It is applied probability management with better marketing.
+Prompt engineering is the practice of writing instructions so a model is more likely to return the kind of output you
+actually need.
 
-At its core, prompt engineering is about reducing ambiguity in systems that are optimized for plausibility, not
-correctness. Large language models do not “understand” instructions; they complete patterns. If your prompt is vague,
-the model will happily comply—creatively.
+Models generate likely continuations from patterns in their training data. They are sensitive to input shape, can sound
+confident while being wrong, and will happily follow a vague prompt into a ditch.
 
-This document treats prompt engineering as an engineering discipline, not a vibe.
+That sounds more dramatic than it is. In practice, getting started usually means being explicit about the task, the
+constraints, the context, and the output format.
 
----
+The goal is not clever wording. The goal is predictable results under pressure.
 
-## What Prompt Engineering Actually Is
-
-Prompt engineering is the controlled specification of:
-
-- **Task definition**
-- **Context**
-- **Constraints**
-- **Output structure**
-- **Evaluation criteria**
-
-In other words: it’s writing requirements for a system that pretends it doesn’t need requirements.
-
-LLMs are probabilistic sequence predictors. They optimize next-token likelihood, not truth. Your prompt narrows the
-solution space.
-
-Think of it as adjusting a loss function without touching the weights.
+If the previous chapter was about not wasting the window, this one is about using the remaining space to give the model
+a clear job.
 
 ---
 
-## Core Components of a Strong Prompt
+## A Simple Prompt Structure
 
-### 1. Clear Task Specification
+Start here.
+
+~~~
+Role:
+[who the model should act as]
+
+Task:
+[what it should do]
+
+Context:
+[the facts it should rely on]
+
+Constraints:
+- [limits, exclusions, required behavior]
+
+Output:
+[exact format, length, or schema]
+
+Failure:
+[what to do if the answer is missing, unsafe, or uncertain]
+~~~
 
 Bad:
 
-- “Explain Kubernetes.”
+- "Review this migration plan and tell me what you think."
 
-Better:
+Good:
 
-- “Explain Kubernetes to a senior backend engineer with no DevOps background. Focus on control plane components and
-  scheduling.”
+- "Act as a backend reviewer. Identify the top 3 operational risks in this migration plan. Use bullet points. Do not
+  invent missing details. If key information is missing, say what is missing."
 
-Even better:
-
-- Define scope boundaries.
-- Specify depth.
-- State exclusions.
-
-LLMs respond well to constraint. Like most systems.
+If the model keeps drifting, the fix is usually not better poetry. It is clearer requirements.
 
 ---
 
-### 2. Explicit Output Format
+## Core Parts
 
-Models are pattern machines. If you want structure, give structure.
+### 1. Role and Task
 
-Example:
+State who the model is supposed to be and what it should do.
 
-~~~
-Return:
-- A short summary (≤150 words)
-- A comparison table
-- Three implementation tradeoffs
-~~~
+Bad:
 
-This significantly reduces entropy. It also prevents “creative” deviations like surprise prose poetry.
+- "Explain Kubernetes."
 
-If you do not specify format, the model will choose one for you. It will rarely be the one you needed.
+Good:
 
----
+- "Explain Kubernetes to a senior backend engineer with no DevOps background. Focus on the control plane and
+  scheduling."
 
-### 3. Role Framing (Used Carefully)
-
-Role prompting works because it activates different token distributions.
-
-Example:
-
-- “Respond as a senior platform engineer.”
-- “Respond as a compliance auditor.”
-
-This changes tone and depth. It does not grant expertise.
-
-Overusing role prompts leads to theatrical outputs. The model is not actually a “Distinguished Principal AI Architect.”
-It just sounds like one.
+This does not grant expertise. It narrows tone, scope, and likely framing.
 
 ---
 
-### 4. Constraints and Guardrails
+### 2. Constraints and Forbidden Behavior
 
-Specify:
+State the limits explicitly: what to do, what not to do, and what to refuse.
+
+Bad:
+
+- "Give me a recommendation."
+
+Good:
+
+- "Recommend one approach. Use bullet points. Avoid speculative claims. Do not introduce external frameworks. If the
+  input is missing critical data, say so instead of guessing."
+
+Useful constraints often include:
 
 - Length limits
 - Allowed tools or libraries
 - Forbidden assumptions
-- Required reasoning style
+- Required approach
+- Refusal paths
+- Citation requirements
+- PII handling
 
-Example:
-
-~~~
-Do not introduce external frameworks.
-Avoid speculative claims.
-Use bullet points.
-~~~
-
-Constraints narrow token search space. Narrow search space → more predictable output.
-
-This is less glamorous than “agentic reasoning chains,” but more effective.
+If a behavior matters, say it once and say it plainly. `must` ages better than `should`.
 
 ---
 
-### 5. Examples (Few-Shot Prompting)
+### 3. Output Shape and Failure Shape
 
-Providing examples establishes pattern anchors.
+If you want structured output, specify it.
 
-Structure:
+Bad:
 
-~~~
-Input: X
-Output: Y
+- "Summarize this architecture decision."
 
-Input: A
-Output: B
+Good:
 
-Input: Z
-Output:
-~~~
+- "Return valid JSON with keys `summary`, `benefits`, `risks`, and `status`. If the input is incomplete, set `status`
+  to `insufficient_input` and list what is missing. Output only JSON."
 
-The model will infer transformation logic from examples.
+For more predictable output:
 
-Few-shot prompting is often more reliable than elaborate instructions. Demonstration beats explanation.
+- Enforce output shape
+- Repeat critical constraints when they matter
+- Define fallback behavior
+- Require explicit uncertainty instead of invented certainty
+- Leave escape hatches for incomplete or unsafe inputs
 
-It also costs tokens. Choose wisely.
-
----
-
-## Prompting Patterns That Work
-
-### Structured Instruction Template
-
-A practical pattern:
-
-~~~
-You are a [role].
-
-Task:
-[clear description]
-
-Constraints:
-- ...
-- ...
-
-Output format:
-- ...
-~~~
-
-It is not sophisticated. It works.
+Production prompts should fail cleanly. "Do your best" is not failure handling.
 
 ---
 
-### Decomposition
+### 4. Context Boundaries in the Prompt
 
-Break complex tasks into sub-steps:
+Provide the facts the model should rely on, and make the trust boundary explicit.
 
-1. Extract relevant facts.
-2. Analyze tradeoffs.
-3. Generate recommendation.
+Bad:
 
-This reduces hallucination because each step has local context.
+- "Use the documents if helpful."
 
-Yes, you are manually orchestrating reasoning. No, you do not need a 17-layer agent framework to do it.
+Good:
 
----
+- "Answer only from the supplied documents. Cite the supporting chunk IDs. If the answer is not present in the
+  provided context, return `not_found`. Do not use external knowledge."
 
-### Iterative Refinement
+Most model API calls are stateless unless your application supplies prior context. At the prompt level, that mainly
+means being explicit about what sources the answer may use.
 
-Treat prompts as code:
+Two practical rules:
 
-- Version them.
-- Test them.
-- Measure output quality.
-- Refactor.
+- If the answer must come from supplied context, say so.
+- If context is chunked badly, the prompt cannot rescue it.
 
-Engineers often attempt “one perfect prompt.” This is equivalent to writing distributed systems without logs.
-
-Prompt engineering improves through iteration.
+Chunking should preserve semantic coherence. Large or vague chunks blur meaning; tiny chunks lose it in pieces.
 
 ---
 
-## Common Failure Modes
+### 5. Examples
 
-### 1. Overly Abstract Instructions
+Examples are useful when the task is mostly about pattern matching: classification, extraction, rewriting, or style.
 
-“Be detailed.”
+Bad:
 
-Detailed about what? Scope ambiguity causes output drift.
+- "Classify these support tickets by urgency."
 
-Precision beats adjectives.
+Good:
 
----
+- "Classify these support tickets by urgency using the examples below, then classify the new ticket with the same label
+  set."
 
-### 2. Hidden Assumptions
+Common mistakes:
 
-If your prompt assumes context that is not provided, the model will invent it.
+- Too many examples for a simple task
+- Examples that contradict the written rules
+- Inconsistent labels or formatting
+- Over-explaining what the examples already show
 
-LLMs abhor a vacuum. They fill it confidently.
-
----
-
-### 3. Overengineering the Prompt
-
-It is possible to create a 1,200-token meta-prompt containing:
-
-- System philosophy
-- Multi-agent hierarchies
-- Internal review loops
-- Self-reflection chains
-
-This may improve output. It may also justify your GPU budget.
-
-Start simple. Increase complexity only if evaluation metrics demand it.
+Examples define behavior. Bad examples define bad behavior more efficiently.
 
 ---
 
-### 4. Ignoring Evaluation
+### 6. Reasoning Instructions
 
-Prompt quality must be evaluated against:
+You can ask the model to work carefully without asking it to print a diary.
 
-| Criterion    | Question                             |
-|--------------|--------------------------------------|
-| Accuracy     | Is it factually correct?             |
-| Completeness | Does it cover required scope?        |
-| Structure    | Does it follow the requested format? |
-| Determinism  | Is output consistent across runs?    |
+Bad:
 
-Without evaluation, prompt engineering becomes aesthetic preference management.
+- "Show all your reasoning before the answer."
+
+Good:
+
+- "Work through the problem carefully, but return only the final answer and a short justification. If uncertain,
+  state the uncertainty explicitly."
+
+The practical goal is not visible verbosity. It is better decisions with controlled output.
 
 ---
 
-## When Prompt Engineering Is Not Enough
+## Common Mistakes
 
-Some problems cannot be solved with better phrasing:
+Bad:
 
-- Domain-specific reasoning gaps
-- Outdated knowledge
-- Tool-dependent workflows
-- Hard numerical constraints
+- A prompt with repeated rules, buried constraints, no explicit failure behavior, and examples that do not match the
+  instructions.
 
-In these cases, use:
+Good:
 
-- Retrieval-Augmented Generation (RAG) [1]
-- Fine-tuning [2]
-- Tool calling / function invocation [3]
+- A prompt with a clear task, explicit constraints, a defined output shape, one or two representative examples, and a
+  failure path.
 
-Prompting shapes behavior. Architecture determines capability.
+Bad prompts usually show the same symptoms:
+
+- Instructions scattered everywhere
+- Contradictory constraints
+- Role mixed with task mixed with examples
+- Emotional filler instead of explicit requirements
+- No clear failure behavior
+- Weak citation requirements when retrieval is involved
+
+When a prompt misbehaves, do the boring fix first:
+
+1. Extract the intent in one sentence.
+2. Separate role, task, context, constraints, and output.
+3. Replace vague words like `should` with `must` where needed.
+4. Normalize repeated rules so they appear once.
+5. Add or fix examples.
+6. Re-test against known cases.
+
+Prompt refactoring is still refactoring. The tools are just worse.
+
+---
+
+## Testing and Iteration
+
+A strong prompt behaves more like a testable specification than a clever instruction.
+
+Bad:
+
+- "Keep tweaking this until it feels smarter."
+
+Good:
+
+- "Test this prompt against five representative inputs. Check schema compliance, refusal behavior, citation behavior,
+  and one edge case with missing information. Then change one thing at a time."
+
+In practice, testing usually means:
+
+- Running representative inputs
+- Checking output shape
+- Checking failure behavior
+- Checking retrieval or citation behavior if applicable
+- Saving a few regression cases
+
+Generation creates possibilities. Evaluation constrains reality.
+
+Bad:
+
+- "Write the answer and judge whether it is good."
+
+Good:
+
+- "First generate an answer. Then, in a separate evaluation step, score it for accuracy, completeness, and format
+  compliance."
+
+If a prompt matters in production, version it. If it only exists in someone's chat history, it is not a system.
+
+---
+
+## Production Concerns
+
+Production prompts should fail safely.
+
+Bad:
+
+- "Do your best."
+
+Good:
+
+- "If required information is missing, return `status: needs_input`, list the missing fields, and ask for the next
+  step."
+
+Many production systems also wrap prompts in a state machine or decision tree.
+
+Bad:
+
+- A single prompt that tries to decide, retrieve, generate, validate, retry, and escalate on its own.
+
+Good:
+
+- A prompt that handles one step well, while the application decides when to retry, retrieve more context, escalate, or
+  stop.
+
+The prompt is usually a one-shot function. The application owns the transitions.
+
+That handoff is the subject of the next chapter: not how to phrase the instruction, but how the application chooses and
+orders the material around it.
+
+---
+
+## When Prompting Is Not Enough
+
+Better prompting does not solve every problem. Some tasks also need:
+
+- Retrieval from current or private documents [1]
+- Tool use for computation or external actions [3]
+- Fine-tuning for narrow, repeated behavior [2]
+
+Bad:
+
+- "Answer from company policy," when the policy is not in the prompt and the model has no tool or retrieval access.
+
+Good:
+
+- "Answer only from the supplied policy excerpts. Cite the supporting section IDs. If the answer is not present,
+  return `not_found`."
+
+Prompting shapes behavior. System design sets the real limits.
 
 ---
 
 ## Practical Workflow
 
-A minimal production-oriented approach:
+1. Define the output format.
+2. Define the failure format.
+3. Write the simplest prompt that could work.
+4. Test it on a small set of representative inputs.
+5. Fix one problem at a time.
+6. Version it once it is stable.
 
-1. Define output schema.
-2. Create baseline prompt.
-3. Generate test cases.
-4. Evaluate systematically.
-5. Refine constraints.
-6. Log failures.
-7. Lock version.
-
-Treat prompts as configuration artifacts, not creative writing.
-
-Store them with version control. Review changes. Measure regressions.
-
-If your prompts live only in someone’s chat history, you do not have a system.
+Treat prompts as configuration, not folklore.
 
 ---
 
-## Final Observations
+## Navigation
 
-Prompt engineering is less about clever wording and more about controlled specification.
-
-It rewards:
-
-- Clarity
-- Constraint
-- Iteration
-- Measurable evaluation
-
-It does not require mysticism, personality hacks, or ritualistic incantations.
-
-It requires writing instructions that a probabilistic model cannot easily misinterpret.
-
-Which, in fairness, is harder than it sounds.
-
----
-
-## References
+[⬅ Context](../07_context/README.md) | [🏠 Home](../README.md) | [Context Engineering ➡](../09_context_engineering/README.md)
 
 [1]: https://arxiv.org/abs/2005.11401
 
 [2]: https://platform.openai.com/docs/guides/fine-tuning
 
 [3]: https://platform.openai.com/docs/guides/function-calling
-
----
-
-## Navigation
-
-- Next: Evaluating LLM Systems in Production
-- Related: Retrieval-Augmented Generation
-- Related: LLM Cost Optimization
-- Back to: AI Engineering Series

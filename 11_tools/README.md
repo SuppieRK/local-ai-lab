@@ -1,51 +1,36 @@
-# LLM Agent Tools
+# Tools
 
-> Because one prompt was too straightforward.
+> Callable external actions the model can request, but the runtime must execute.
 
-LLM agents combine iterative reasoning with external tool invocation. In production terms, this means a probabilistic
-model suggests structured actions, and your system decides whether to trust it. The boundary between “smart assistant”
-and “autonomous workflow engine” is thinner than marketing implies.
+A tool is a contract between the model and the runtime.
 
-This article focuses on engineering reality: what tools are, how they work, and how to implement them without
-constructing an accidental orchestration platform.
+The model can ask for `search_docs`, `get_weather`, or `run_sql`. It does not perform those actions itself. The runtime
+decides whether the request is valid, safe, authorized, and worth executing.
 
 ---
 
-## 1. What “Tools” Actually Are
+## What a Tool Is
 
-A tool is any callable capability exposed to the model:
+A practical tool definition includes:
 
-- HTTP APIs
-- Database queries
-- Search systems
-- File operations
-- Code execution sandboxes
-- Internal services
+- a name
+- a plain description of what it does
+- a strict argument schema
+- a defined result shape
 
-The model does not execute tools. It emits a structured request. Your runtime validates and executes it.
+Bad:
+
+- Let the model emit vaguely structured arguments and hope downstream code interprets them correctly.
+
+Good:
+
+- Give the model one clearly named tool with a strict schema, validate the request, then return a structured result.
 
 Minimal loop:
 
 ~~~text
-User → LLM → Tool Call (structured JSON) → Runtime executes → LLM → Final Answer
+User -> Model -> Tool request -> Runtime validates and executes -> Tool result -> Model -> Final answer
 ~~~
-
-Add retries, reflection, and multi-step planning, and you have an “agent framework.” Add distributed tracing and GPU
-dashboards, and you have a roadmap.
-
----
-
-## 2. Core Architecture
-
-Most practical agent systems follow a predictable structure.
-
-### 2.1 Define Tools with Precision
-
-Each tool should include:
-
-- Name
-- Clear natural-language description
-- Strict JSON schema
 
 Example:
 
@@ -60,260 +45,163 @@ Example:
         "type": "string"
       }
     },
-    "required": [
-      "city"
-    ]
+    "required": ["city"]
   }
 }
 ~~~
 
-Design notes:
-
-- Keep descriptions literal, not clever.
-- Avoid overlapping tools.
-- Constrain schemas aggressively.
-
-The model cannot reason about ambiguity it cannot see.
+Modern APIs from OpenAI and Anthropic support structured tool calls [1][2].
 
 ---
 
-### 2.2 Let the Model Decide
+## Tools vs. Skills
 
-Modern APIs from :contentReference[oaicite:0]{index=0} and :contentReference[oaicite:1]{index=1} support structured tool
-calls [1][2].
+A skill constrains how the model performs a task.
 
-A typical response:
+A tool exposes something outside the model: an API, database, search index, shell command, or internal service.
 
-~~~json
-{
-  "tool_call": {
-    "name": "get_weather",
-    "arguments": {
-      "city": "Berlin"
-    }
-  }
-}
-~~~
+Bad:
 
-The runtime then:
+- Treat a tool as a bundle of reasoning, planning, and side effects.
 
-1. Validates arguments
-2. Executes the tool
-3. Returns structured output to the model
-4. Lets the model continue reasoning
+Good:
 
-The model proposes. Your system disposes.
+- Keep the tool contract narrow. Let the runtime execute it. Let prompts, skills, or agents decide when to ask for it.
+
+Tools are actions, not orchestration.
 
 ---
 
-## 3. Tool Execution Patterns
+## Common Execution Patterns
 
-### 3.1 Single-Step Tools
+### 1. Single-step tool use
+
+Bad:
+
+- Build a planning loop for a single deterministic lookup.
+
+Good:
+
+- Call one tool, return the result, stop.
 
 Best for:
 
-- Lookups
-- Deterministic queries
-- Stateless operations
+- lookups
+- deterministic queries
+- stateless operations
 
-Properties:
-
-- Easy to test
-- Minimal reasoning loops
-- Lower failure surface
-
-If a single call solves the problem, do not build a planner. This is not the place to justify a multi-agent hierarchy.
+If one call solves the problem, stop celebrating and take the win.
 
 ---
 
-### 3.2 Iterative Reasoning (ReAct-Style)
+### 2. Repeated tool use inside a loop
 
-Pattern:
+Bad:
 
-~~~text
-Thought → Tool → Observation → Thought → Tool → Final Answer
-~~~
+- Let the model keep calling tools until it feels spiritually complete.
+
+Good:
+
+- Bound the loop, log the calls, and stop when the task has a defined completion state.
 
 Useful for:
 
-- Multi-hop queries
-- Information retrieval
-- Workflow coordination
+- multi-hop retrieval
+- exploratory workflows
+- tasks where one tool result affects the next step
 
-Risk:
-
-- Cost explosion
-- Latency creep
-- Recursive overconfidence
-
-Every loop increases variance. Budget for it.
+Loops belong to the runtime or agent layer, not to the tool definition itself.
 
 ---
 
-### 3.3 Tool Chaining
+### 3. Tool chaining
 
-Instead of letting the model chain tools arbitrarily:
+Bad:
 
-- Enforce max steps
-- Log all intermediate calls
-- Apply timeouts
-- Detect repeated patterns
+- Allow arbitrary chains with no step cap, no timeout, and no visibility.
 
-If the agent calls the same tool four times with similar arguments, it is not “exploring.” It is oscillating.
+Good:
+
+- Enforce max steps, timeouts, and repeated-call detection.
+
+If the system calls the same tool four times with nearly identical arguments, it is probably not discovering anything
+new.
 
 ---
 
-## 4. Practical Engineering Constraints
+## Runtime Responsibilities
 
-### 4.1 Validation Is Mandatory
+Tool calls are untrusted input from a probabilistic system.
 
-Never pass model arguments directly to:
+At minimum, the runtime should handle:
 
-- SQL engines
-- Shell commands
-- Internal admin APIs
+- schema validation
+- authorization
+- timeouts
+- logging
+- rate limits
+- step limits when calls happen in a loop
 
-Treat tool calls as untrusted input.
+Bad:
 
-At minimum:
+- Pass raw model arguments directly into shell commands, SQL, or privileged internal APIs.
 
-- Schema validation
-- Authorization checks
-- Rate limiting
-- Logging
+Good:
+
+- Validate, authorize, constrain, and log everything before execution.
 
 The model is probabilistic. Your infrastructure should not be.
 
 ---
 
-### 4.2 Observability
+## Cost and Observability
 
-Track:
+Tools do not remove operational cost. They move it around.
 
-- Tool call frequency
-- Argument distributions
-- Failure rates
-- Token usage per task
+Track at minimum:
 
-Without observability, you are debugging vibes.
+- tool call frequency
+- argument distributions
+- failure rates
+- token usage per task
+- latency per step
 
----
+Bad:
 
-### 4.3 Cost Control
+- "It seems slower when the model uses tools."
 
-Agent systems increase:
+Good:
 
-- Token consumption
-- Latency
-- Complexity
+- "This workflow averages 4 tool calls, 11 seconds, and 9k tokens, with a 7% validation failure rate."
 
-Mitigations:
-
-- Limit maximum reasoning steps
-- Cache deterministic tool results
-- Prefer direct tool execution over reflection loops
-
-If a workflow can be encoded as deterministic code, encode it as deterministic code.
+Without instrumentation, you are debugging vibes again.
 
 ---
 
-## 5. When Not to Use Agents
+## Where Agents Enter
 
-Do not use an agent if:
+One tool call does not require an agent.
 
-- The workflow is static
-- The steps are deterministic
-- All decisions can be rule-based
+Agents become useful when the system must choose which step or tool comes next across multiple steps, carry state
+forward, and decide when to stop.
 
-A simple orchestrator with explicit logic is often:
+Bad:
 
-- Faster
-- Cheaper
-- More testable
+- Use an agent for a fixed workflow with known steps and rule-based branching.
 
-LLM agents are useful when:
+Good:
 
-- Inputs are unstructured
-- Decision boundaries are fuzzy
-- Tool selection is genuinely contextual
+- Use ordinary application code for fixed workflows, and add an agent only when the next step genuinely depends on model
+  judgment.
 
-Otherwise, you are replacing a switch statement with a language model.
-
----
-
-## 6. Example: Controlled Agent Runtime
-
-High-level implementation sketch:
-
-~~~text
-1. Receive user query
-2. Send to LLM with tool definitions
-3. If tool_call:
-     a. Validate arguments
-     b. Execute tool
-     c. Append tool result to conversation
-     d. Repeat (bounded)
-4. Return final answer
-~~~
-
-Key guardrails:
-
-- Max iterations (e.g., 5)
-- Execution timeout
-- Tool whitelist
-- Structured logs
-
-If you cannot explain your agent loop in ten lines of pseudocode, it is probably too complex.
-
----
-
-## 7. Strategic Guidance
-
-| Goal            | Recommendation                               |
-|-----------------|----------------------------------------------|
-| Reliability     | Prefer fewer tools with stricter schemas     |
-| Scalability     | Limit reasoning loops                        |
-| Cost control    | Cap iterations and cache results             |
-| Maintainability | Avoid dynamic tool injection unless required |
-| Debugging       | Log every intermediate step                  |
-
-Agents are coordination layers. Treat them as such.
-
----
-
-## 8. Closing Perspective
-
-LLM agent tools are powerful abstractions. They allow a language model to orchestrate external capabilities in ways that
-resemble reasoning.
-
-They are also:
-
-- Expensive
-- Non-deterministic
-- Prone to subtle failure modes
-
-Used carefully, they reduce glue code. Used enthusiastically, they become a distributed system with a personality.
-
-As usual, the correct level of abstraction is slightly less than the one you are tempted to build.
-
----
-
-## References
-
-[1] OpenAI API documentation — https://platform.openai.com/docs  
-[2] Anthropic API documentation — https://docs.anthropic.com
+If the workflow is fixed, ordinary code is usually the better controller.
 
 ---
 
 ## Navigation
 
-- Introduction
-- Tool Definition
-- Execution Patterns
-- Engineering Constraints
-- When Not to Use Agents
-- Implementation Sketch
-- Strategic Guidance
-- References
+[⬅ Skills](../10_skills/README.md) | [🏠 Home](../README.md) | [Agents ➡](../12_agents/README.md)
 
-Return to top.
+[1]: https://platform.openai.com/docs/guides/function-calling
+
+[2]: https://docs.anthropic.com/en/docs/agents-and-tools/tool-use/overview

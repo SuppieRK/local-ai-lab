@@ -24,6 +24,9 @@ Every architectural decision eventually reduces to tokens:
 Context windows are finite. Budgets are finite. Patience is especially finite. If you optimize one thing, optimize token
 flow. Everything else follows.
 
+That gives us a practical order of operations: first control what enters the window, then make the instruction itself
+precise, then decide how context and state are assembled for each step.
+
 ## What can we do?
 
 ### More efficient data retrieval
@@ -83,11 +86,14 @@ into supported coding agents while keeping their usual command shape. It preserv
 falls back to native output for ambiguous or precision-sensitive cases, and gives you a way to measure the effect with
 `ccp gain`.
 
+This chapter is about context discipline at the budget level: keeping inputs small, relevant, and cheap enough to use
+repeatedly. The next chapter moves one layer up and looks at the instruction itself.
+
 ---
 
 ## Navigation
 
-[⬅ Spec Driven Development](../06_spec_driven_development/README.md) | [🏠 Home](../README.md)
+[⬅ Spec Driven Development](../06_spec_driven_development/README.md) | [🏠 Home](../README.md) | [Prompt Engineering ➡](../08_prompt_engineering/README.md)
 
 [1]: https://github.com/BurntSushi/ripgrep
 

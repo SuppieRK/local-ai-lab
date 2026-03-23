@@ -1,135 +1,245 @@
 # Context Engineering
 
-> Designing the input so the model doesn’t have to guess what you meant.
+> Deciding what the model sees, what it does not see, and what arrives too late to help.
 
-Most AI failures are not model failures. They are context failures.  
-The model did exactly what you asked. You just didn’t mean it that way.
+Many LLM failures are context failures rather than raw model failures.
 
-Context engineering is the discipline of deliberately shaping what a model sees, in what order, and with what
-constraints, so that its probabilistic guess aligns with your intent. It is less glamorous than fine-tuning and cheaper
-than explaining to your CFO why you need more GPUs.
+Context engineering is the practice of deciding what information enters the window, how it is ordered, what is omitted,
+and what the application must do outside the prompt.
+
+It is less about phrasing a clever instruction and more about making sure the model sees the right material, in the
+right form, at the right time. Slightly less glamorous than fine-tuning, but usually more useful.
+
+If prompt engineering is how you write the instruction, context engineering is how you decide what surrounds it.
 
 ---
 
-## What “Context” Actually Means
+## What Context Includes
 
-In practical terms, context is everything inside the model’s token window:
+In practical terms, context is everything the application sends with the request:
 
 - System instructions
 - User input
 - Retrieved documents
 - Tool results
 - Conversation history
-- Hidden scaffolding (schemas, formatting contracts, guardrails)
+- Hidden scaffolding such as schemas, routing hints, and guardrails
 
-If it fits inside the window, it influences the output.  
-If it doesn’t, it might as well not exist.
-
-This sounds obvious. It becomes less obvious at scale.
+If the application does not send it, the model cannot rely on it. If the application sends too much, the useful parts
+compete with everything else.
 
 ---
 
-## Why Context Engineering Matters
+## A Simple Assembly Order
 
-Modern LLM systems rarely fail because the model is “dumb.” They fail because:
+Start with a boring structure.
 
-- The prompt is underspecified.
-- Retrieved data is irrelevant or noisy.
-- Important constraints appear too late.
-- The output format is ambiguous.
-- The conversation history drifts.
-
-In other words, entropy wins.
-
-Throwing a larger model at the problem often helps. So does doubling the context window. But that’s similar to adding
-microservices to fix a naming issue: technically possible, operationally expensive.
-
----
-
-## Core Principles
-
-### 1. Explicit Over Implicit
-
-Models infer. That’s their job.  
-Your job is to remove the need for inference.
+1. Persistent instructions and non-negotiable constraints
+2. The current user goal
+3. Retrieved evidence or tool results
+4. Short conversational state, if it still matters
+5. Anything expendable
 
 Bad:
 
-- “Summarize this.”
+- A large pile of retrieved documents followed by the actual rule near the end.
 
-Better:
+Good:
 
-- “Summarize in 5 bullet points. Focus on architectural trade-offs. No marketing language.”
+- The governing instruction first, the current task second, the supporting evidence after that.
 
-Ambiguity is paid for in tokens.
-
----
-
-### 2. Order Matters
-
-Transformers are not mystical oracles. They are sequence processors.
-
-Information placed:
-
-- Early influences framing.
-- Late influences detail.
-- Repeated influences weighting.
-
-If constraints appear after the data dump, expect creative interpretation.
-
-A reliable pattern:
-
-1. Role and objective
-2. Constraints and output schema
-3. Primary task
-4. Supporting data
-
-Yes, it feels rigid. So does type safety. It’s still useful.
+Do not make the model excavate the important rule from a document landfill.
 
 ---
 
-### 3. Retrieval Is a First-Class Concern
+## Division of Labor
 
-In RAG systems, retrieval quality dominates outcome quality.
+Prompt engineering decides how to ask for the result.
 
-If your retriever returns:
+Context engineering decides what evidence, state, and constraints are available when the model answers.
 
-| Scenario                        | Result                   |
-|---------------------------------|--------------------------|
-| Highly relevant, concise chunks | Focused, grounded output |
-| Semi-related documents          | Confident hallucination  |
-| Everything vaguely related      | Token overflow and vibes |
+In practice, systems usually degrade because:
 
-Practical guidelines:
+- the wrong documents were retrieved
+- the right documents arrived buried in noise
+- critical constraints were present but too late
+- stale conversation state overrode the current task
+- the application expected the model to remember what it never sent
 
-- Keep chunks semantically coherent.
-- Avoid overlong documents.
-- Rank aggressively.
-- Prefer precision over recall when stakes are high.
-
-The model cannot ignore irrelevant context reliably. It will try to make sense of it. That is both admirable and
-inconvenient.
+A larger model or larger window can mask some of this. It does not remove the need to choose the inputs well.
 
 ---
 
-### 4. Constrain the Output Shape
+## Core Practices
 
-Free-form generation is entertaining but operationally fragile.
+### 1. Include Only What The Step Needs
 
-If the output feeds:
+The question is not "what could be relevant?" The question is "what must be present for this step to succeed?"
 
-- A parser
-- An automation workflow
-- A database
-- Another model
+Bad:
 
-Define a schema.
+- Send the entire ticket history, design doc, incident log, and previous sprint notes to answer one narrow question.
 
-Example:
+Good:
 
-~~~json
-{
-  "decision": "approve | reject",
-  "risk_level": "low | medium | high",
-  "rationale": "string"
-}
+- Send only the current task, the directly relevant excerpt, and the one prior result the model still needs.
+
+Useful context is:
+
+- relevant to the current task
+- trustworthy enough for the required decision
+- small enough that the important parts stay visible
+
+Everything else is overhead wearing a helpful disguise.
+
+---
+
+### 2. Put High-Leverage Material First
+
+Order still matters inside a large window.
+
+Bad:
+
+- Present ten pages of retrieved material and mention the actual constraint afterward.
+
+Good:
+
+- Put the non-negotiable rule first, then the task, then the evidence needed to complete it.
+
+Early context frames the task. Later context fills in details. Repeated context gets extra weight whether it deserves it
+or not.
+
+---
+
+### 3. Use Progressive Disclosure
+
+Do not send everything up front just because you can.
+
+Bad:
+
+- Start the step with the full repository summary, six retrieved documents, recent chat history, and raw tool output,
+  before the model has even shown that it needs them.
+
+Good:
+
+- Start with the governing rule, the current goal, and the minimum supporting context. Retrieve or append more only if
+  the current step actually needs it.
+
+Progressive disclosure keeps context windows cleaner, reduces noise, and makes failure cases easier to debug.
+
+---
+
+### 4. Retrieval Defines The Trust Boundary
+
+If the answer must come from retrieved material, say so, and retrieve accordingly.
+
+Bad:
+
+- "Use the documents if helpful."
+
+Good:
+
+- "Answer only from the supplied documents. Cite the supporting chunk IDs. If the answer is not present, return
+  `not_found`."
+
+Useful retrieval policy usually means:
+
+- chunks that preserve semantic units
+- ranking that prefers relevance over volume
+- clear source identifiers for citation
+- a defined fallback when the answer is not present
+
+If the relevant material fits comfortably in context, the simplest retrieval strategy is sometimes no retrieval at all.
+
+Weak retrieval does not just reduce quality. It changes what the model is able to justify.
+
+---
+
+### 5. Manage Conversation State Deliberately
+
+Conversation history is not free context. It is accumulated bias.
+
+Bad:
+
+- Keep the full conversation forever and hope the model politely ignores the stale parts.
+
+Good:
+
+- Keep only unresolved references, current preferences that still matter, and prior results needed for this step.
+
+Keep history only when it still helps with:
+
+- unresolved references
+- user preferences that actually matter
+- prior tool results still needed for the current step
+
+Summarize or drop the rest. Old turns are often more dangerous than missing turns because they still look authoritative.
+
+---
+
+### 6. Keep Orchestration Outside The Prompt When Possible
+
+One prompt should not retrieve, decide, validate, retry, summarize, and escalate unless you enjoy debugging avoidable
+ambiguity.
+
+Bad:
+
+- A single prompt that tries to gather evidence, judge sufficiency, call tools, write the answer, validate the answer,
+  and decide whether to retry.
+
+Good:
+
+- The application decides when to retrieve and when to call tools; the model handles one bounded step at a time.
+
+A more stable pattern is:
+
+- the application decides when to retrieve
+- the application decides when to call tools
+- the model handles one bounded step at a time
+- the application decides whether to continue, retry, or stop
+
+This is context engineering too. The boundary between prompt and application logic is part of the design.
+
+---
+
+## Common Failure Modes
+
+Bad:
+
+- A system that keeps adding more context whenever the answer looks wrong.
+
+Good:
+
+- A system that asks which missing input, stale state, or weak retrieval decision caused the answer to drift.
+
+Common problems:
+
+- irrelevant retrieval results
+- chunks that split meaning across boundaries
+- repeated rules scattered across prompt and history
+- stale state carried forward by habit
+- citations requested vaguely or not at all
+- tool results included in full when a short summary would do
+
+Context windows are large enough to let you make expensive mistakes at scale.
+
+---
+
+## Practical Checklist
+
+Before blaming the model, check:
+
+1. Did we send the minimum necessary context for this step?
+2. Is the most important instruction visible early?
+3. Are retrieved chunks relevant, bounded, and attributable?
+4. Is stale conversation state still being carried forward?
+5. Is the application expecting the model to infer a rule it never received?
+6. Should this be one prompt, or several smaller steps?
+
+Context engineering is mostly input selection with fewer illusions.
+
+---
+
+## Navigation
+
+[⬅ Prompt Engineering](../08_prompt_engineering/README.md) | [🏠 Home](../README.md) | [Skills ➡](../10_skills/README.md)
