@@ -19,6 +19,7 @@ Workflow and agent-building topics:
 - [Skills](./10_skills/README.md)
 - [Tools](./11_tools/README.md)
 - [Agents](./12_agents/README.md)
+- [Harness Engineering](./13_harness_engineering/README.md)
 
 ## Introduction
 
