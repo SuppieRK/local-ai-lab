@@ -15,6 +15,24 @@ User → Chat → LLM → MCP Client → MCP Server → External System
 
 It's a thin integration layer. Not magic. Just REST API plumbing with better branding.
 
+---
+
+## When it is actually useful
+
+MCP is worth caring about when you need one of these:
+
+- a standard way to expose internal tools to multiple clients
+- a remote capability that does not fit cleanly into your current runtime
+- a shared interface for search, docs, databases, or internal APIs
+
+Bad fit:
+
+- adding a web-search server because the acronym sounded expensive
+- wrapping one local script that your agent runtime can already call directly
+- introducing another process boundary before you have a concrete integration problem
+
+If your current tool setup is one shell command and a good attitude, MCP may be a future concern rather than a present one.
+
 ### Oh, I read about those – I need them!
 
 Let's do a brief reality check — read [The State of MCP report][2] first.
@@ -32,6 +50,8 @@ Not unless you have a concrete use case.
 If you're curious which MCP servers exist, browse [awesome-mcp-servers][4].
 
 If you decide you actually need one, add it directly to your OpenCode configuration per the [documentation][5].
+
+In other words, treat MCP as a protocol option, not a rite of passage.
 
 ---
 

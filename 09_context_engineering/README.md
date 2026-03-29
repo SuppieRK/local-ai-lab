@@ -242,4 +242,4 @@ Context engineering is mostly input selection with fewer illusions.
 
 ## Navigation
 
-[⬅ Prompt Engineering](../08_prompt_engineering/README.md) | [🏠 Home](../README.md) | [Skills ➡](../10_skills/README.md)
+[⬅ Context](../08_context/README.md) | [🏠 Home](../README.md) | [Tools ➡](../10_tools/README.md)

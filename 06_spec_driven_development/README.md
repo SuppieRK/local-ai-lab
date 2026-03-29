@@ -98,11 +98,13 @@ What did we learn?
 
 I recommend revisiting the [LLM Settings](../03_llm_settings/README.md) page to refine parameters for your environment.
 
+The next chapter moves back to the smallest unit in the stack: the prompt itself.
+
 ---
 
 ## Navigation
 
-[⬅ MCP](../05_mcp/README.md) | [🏠 Home](../README.md) | [Context ➡](../07_context/README.md)
+[⬅ MCP](../05_mcp/README.md) | [🏠 Home](../README.md) | [Prompt Engineering ➡](../07_prompt_engineering/README.md)
 
 [1]: https://openspec.dev
 

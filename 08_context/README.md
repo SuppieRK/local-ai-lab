@@ -1,5 +1,7 @@
 # Context
 
+> Deciding what should enter the window before the token budget starts filing complaints.
+
 By now, you presumably have your own LLM stack running and occasionally doing what you asked. It may even complete tasks
 with something approaching reliability. You have likely also performed the quiet, slightly sobering calculation of
 whether hosting your own AI stack makes economic sense — or whether Claude, Codex, Copilot, or another coding agent is
@@ -24,8 +26,8 @@ Every architectural decision eventually reduces to tokens:
 Context windows are finite. Budgets are finite. Patience is especially finite. If you optimize one thing, optimize token
 flow. Everything else follows.
 
-That gives us a practical order of operations: first control what enters the window, then make the instruction itself
-precise, then decide how context and state are assembled for each step.
+That gives us a practical order of operations: write a clear instruction, control what enters the window, then decide how
+context and state are assembled for each step.
 
 ## What can we do?
 
@@ -87,13 +89,13 @@ falls back to native output for ambiguous or precision-sensitive cases, and give
 `ccp gain`.
 
 This chapter is about context discipline at the budget level: keeping inputs small, relevant, and cheap enough to use
-repeatedly. The next chapter moves one layer up and looks at the instruction itself.
+repeatedly. The next chapter moves from raw context budget to context assembly and system design.
 
 ---
 
 ## Navigation
 
-[⬅ Spec Driven Development](../06_spec_driven_development/README.md) | [🏠 Home](../README.md) | [Prompt Engineering ➡](../08_prompt_engineering/README.md)
+[⬅ Prompt Engineering](../07_prompt_engineering/README.md) | [🏠 Home](../README.md) | [Context Engineering ➡](../09_context_engineering/README.md)
 
 [1]: https://github.com/BurntSushi/ripgrep
 

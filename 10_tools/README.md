@@ -7,6 +7,9 @@ A tool is a contract between the model and the runtime.
 The model can ask for `search_docs`, `get_weather`, or `run_sql`. It does not perform those actions itself. The runtime
 decides whether the request is valid, safe, authorized, and worth executing.
 
+In the explanation flow for this repo, tools come before skills for a simple reason: before you decide how to reuse a
+behavior, it helps to understand what the model is actually allowed to ask the outside world to do.
+
 ---
 
 ## What a Tool Is
@@ -28,13 +31,13 @@ Good:
 
 Minimal loop:
 
-~~~text
+```text
 User -> Model -> Tool request -> Runtime validates and executes -> Tool result -> Model -> Final answer
-~~~
+```
 
 Example:
 
-~~~json
+```json
 {
   "name": "get_weather",
   "description": "Fetch current weather by city",
@@ -48,7 +51,7 @@ Example:
     "required": ["city"]
   }
 }
-~~~
+```
 
 Modern APIs from OpenAI and Anthropic support structured tool calls [1][2].
 
@@ -56,9 +59,9 @@ Modern APIs from OpenAI and Anthropic support structured tool calls [1][2].
 
 ## Tools vs. Skills
 
-A skill constrains how the model performs a task.
-
 A tool exposes something outside the model: an API, database, search index, shell command, or internal service.
+
+A skill constrains how the model performs a recurring task.
 
 Bad:
 
@@ -69,6 +72,48 @@ Good:
 - Keep the tool contract narrow. Let the runtime execute it. Let prompts, skills, or agents decide when to ask for it.
 
 Tools are actions, not orchestration.
+
+The usual split looks like this:
+
+- prompt: tell the model what one step should do
+- context: decide what information that step can see
+- tool: let the runtime fetch or change something external
+- skill: make a recurring class of steps behave consistently
+- agent: decide which step or tool happens next in a bounded loop
+
+That is less glamorous than calling everything an agent, but it does help when you have to debug it.
+
+---
+
+## A Concrete OpenCode Example
+
+Suppose the task is: "Find the controller for the hello-world endpoint and check whether there is a test for it."
+
+At the tool layer, this is still ordinary external action, not a full workflow abstraction.
+
+The runtime might expose tools such as:
+
+- `glob` to find likely files
+- `grep` to search for `@GetMapping` or `Hello`
+- `read` to inspect the matching Java file
+
+A bounded run could look like this:
+
+```text
+1. glob("src/main/java/**/*.java")
+2. grep("@GetMapping|Hello", path="src/main/java")
+3. read("src/main/java/.../HelloController.java")
+4. grep("HelloController|hello", path="src/test/java")
+```
+
+That is still not a skill yet. It is just the model using external actions that the runtime made available.
+
+The distinction matters because the failure modes are different:
+
+- bad tool design means invalid arguments, noisy output, or unsafe execution
+- bad skill design means the model performs the right class of work inconsistently
+
+Fix the contract first. Then worry about reuse.
 
 ---
 
@@ -178,9 +223,19 @@ Without instrumentation, you are debugging vibes again.
 
 ---
 
-## Where Agents Enter
+## Where Skills and Agents Enter
 
-One tool call does not require an agent.
+If the same tool-assisted step keeps reappearing, the next layer is usually a skill.
+
+Examples:
+
+- "start a new OpenSpec change"
+- "apply the next OpenSpec task"
+- "review this diff for operational risk"
+
+That is where you stop saying the same thing in slightly different ways and package the behavior more deliberately.
+
+One tool call still does not require an agent. One reusable step still does not require an agent either.
 
 Agents become useful when the system must choose which step or tool comes next across multiple steps, carry state
 forward, and decide when to stop.
@@ -200,7 +255,7 @@ If the workflow is fixed, ordinary code is usually the better controller.
 
 ## Navigation
 
-[⬅ Skills](../10_skills/README.md) | [🏠 Home](../README.md) | [Agents ➡](../12_agents/README.md)
+[⬅ Context Engineering](../09_context_engineering/README.md) | [🏠 Home](../README.md) | [Skills ➡](../11_skills/README.md)
 
 [1]: https://platform.openai.com/docs/guides/function-calling
 

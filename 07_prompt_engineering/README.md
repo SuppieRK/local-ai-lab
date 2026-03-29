@@ -13,8 +13,8 @@ constraints, the context, and the output format.
 
 The goal is not clever wording. The goal is predictable results under pressure.
 
-If the previous chapter was about not wasting the window, this one is about using the remaining space to give the model
-a clear job.
+This is the smallest useful unit in the workflow stack: before tools, loops, and orchestration, you still need one step
+to be well specified.
 
 ---
 
@@ -22,7 +22,7 @@ a clear job.
 
 Start here.
 
-~~~
+```
 Role:
 [who the model should act as]
 
@@ -40,7 +40,7 @@ Output:
 
 Failure:
 [what to do if the answer is missing, unsafe, or uncertain]
-~~~
+```
 
 Bad:
 
@@ -329,7 +329,7 @@ Treat prompts as configuration, not folklore.
 
 ## Navigation
 
-[⬅ Context](../07_context/README.md) | [🏠 Home](../README.md) | [Context Engineering ➡](../09_context_engineering/README.md)
+[⬅ Spec Driven Development](../06_spec_driven_development/README.md) | [🏠 Home](../README.md) | [Context ➡](../08_context/README.md)
 
 [1]: https://arxiv.org/abs/2005.11401
 

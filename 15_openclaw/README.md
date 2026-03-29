@@ -1,6 +1,6 @@
 # OpenClaw
 
-> A personal assistant platform that takes ~message the agent~ more literally than most.
+> A personal assistant platform that takes `message the agent` more literally than most.
 
 OpenClaw is an open-source, self-hosted personal assistant platform. You run a Gateway on your own machine or server,
 connect the communication channels you already use, and let an agent operate through tools, browser control, device
@@ -81,7 +81,7 @@ The docs are unusually direct: OpenClaw is built around a personal-assistant tru
 
 The easiest way to understand OpenClaw is to see the shape of the system.
 
-~~~mermaid
+```mermaid
 flowchart TD
     U[User] --> C[Channel or Client]
 
@@ -125,7 +125,7 @@ flowchart TD
     T --> N
     T --> X
     T --> H
-~~~
+```
 
 The general pattern is simple enough:
 
@@ -151,7 +151,7 @@ The Gateway is the long-lived daemon and the center of the system [3]. It:
 - emits events like agent, chat, presence, heartbeat, and cron
 - serves web surfaces such as the Control UI and Canvas host on the same HTTP surface [1][3]
 
-By default, it listens on ~127.0.0.1:18789~ [3]. That default is not accidental. OpenClaw is local-first in the most
+By default, it listens on `127.0.0.1:18789` [3]. That default is not accidental. OpenClaw is local-first in the most
 literal sense: keep the powerful thing close unless you have a good reason not to.
 
 ### Clients
@@ -190,12 +190,12 @@ session management, routing, tool wiring, and delivery [4].
 That runtime uses a workspace directory as the default working directory and injects a set of bootstrap files into the
 first turn of a new session [4]. These include:
 
-- ~AGENTS.md~
-- ~SOUL.md~
-- ~TOOLS.md~
-- ~BOOTSTRAP.md~
-- ~IDENTITY.md~
-- ~USER.md~
+- `AGENTS.md`
+- `SOUL.md`
+- `TOOLS.md`
+- `BOOTSTRAP.md`
+- `IDENTITY.md`
+- `USER.md`
 
 This is one of the more concrete parts of the design. OpenClaw does not rely purely on one global system prompt. It uses
 workspace-local files as stable, user-editable context [4].
@@ -205,8 +205,8 @@ workspace-local files as stable, user-editable context [4].
 Skills are loaded from three places, with workspace definitions winning on conflicts:
 
 - bundled skills
-- managed or local skills under the ~/.openclaw/skills directory
-- workspace skills under ~<workspace>/skills~ [4]
+- managed or local skills under the `~/.openclaw/skills` directory
+- workspace skills under `<workspace>/skills` [4]
 
 That gives OpenClaw a layered capability model. There is a shared base, a local extension layer, and an agent-specific
 layer where the real personality and behavior differences usually appear.
@@ -217,7 +217,7 @@ layer where the real personality and behavior differences usually appear.
 
 The protocol-level flow is one of the cleaner parts of the system.
 
-~~~mermaid
+```mermaid
 sequenceDiagram
     participant User
     participant Surface as Channel or Client
@@ -234,7 +234,7 @@ sequenceDiagram
     Agent-->>Gateway: Final response or stream
     Gateway-->>Surface: Deliver reply
     Surface-->>User: Response
-~~~
+```
 
 The important part is not that messages go in and answers come out. Every assistant demo has managed that much.
 
@@ -273,7 +273,7 @@ That can be based on:
 
 So you can route different channels or even different peers to different agents with separate workspaces and behavior.
 
-~~~mermaid
+```mermaid
 flowchart LR
     M[Inbound message] --> B{Binding match}
     B -->|Peer match| A1[Agent A]
@@ -283,7 +283,7 @@ flowchart LR
     A1 --> W1[Workspace A]
     A2 --> W2[Workspace B]
     A3 --> W3[Workspace Main]
-~~~
+```
 
 This gives OpenClaw a nice property: the agent boundary is operational, not merely cosmetic.
 
@@ -378,7 +378,7 @@ Good:
 
 If you want a more mechanical picture, it looks roughly like this.
 
-~~~mermaid
+```mermaid
 flowchart TB
     subgraph Gateway
         WS[Typed WebSocket API]
@@ -414,7 +414,7 @@ flowchart TB
     AR --> BR
     AR --> AU
     HTTP --> WS
-~~~
+```
 
 The key point is that OpenClaw is layered in a way that makes the control plane, runtime, and capability surfaces
 distinct. That separation is what allows it to support a fairly chaotic set of channels and devices without becoming
@@ -469,7 +469,7 @@ Which, in fairness, is also true of many engineers.
 
 ## Navigation
 
-[⬅ Harness Engineering](../13_harness_engineering/README.md) | [🏠 Home](../README.md)
+[⬅ Harness Engineering](../14_harness_engineering/README.md) | [🏠 Home](../README.md)
 
 [1]: https://raw.githubusercontent.com/openclaw/openclaw/main/README.md
 

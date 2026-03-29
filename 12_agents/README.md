@@ -7,6 +7,7 @@ By this point, we have already separated a few concerns:
 - prompts define what one step should do
 - context decides what that step gets to see
 - tools expose actions the runtime can execute
+- skills make recurring classes of steps behave consistently
 
 Agents add the next layer: a controller that decides which step or tool happens next.
 
@@ -32,13 +33,13 @@ Good:
 
 Minimal sketch:
 
-~~~python
+```python
 while not done:
     decision = llm(state)
     result = execute(decision)
     state = update(state, result)
     done = should_stop(state)
-~~~
+```
 
 The loop is the feature. The problems usually come free with it.
 
@@ -85,6 +86,58 @@ Good:
 - One controller, a small tool set, explicit schemas, a maximum iteration count, and a boring escalation path.
 
 This is less cinematic than a multi-agent society. It is also easier to operate.
+
+---
+
+## A Concrete OpenCode Loop
+
+Suppose you want an agent to apply one OpenSpec task in a small codebase.
+
+At that point, a skill alone is often not enough because the system has to inspect state, make progress, react to
+results, and stop cleanly.
+
+A compact working state might look like this:
+
+```json
+{
+  "goal": "Implement the next task for change add-audit-logging",
+  "change": "add-audit-logging",
+  "step": 0,
+  "max_steps": 8,
+  "completed_tasks": [],
+  "current_file": null,
+  "status": "running"
+}
+```
+
+One bounded loop could be:
+
+1. Ask `openspec` for the current change status.
+2. Read the context files for the next pending task.
+3. Inspect the relevant source files.
+4. Make the code change.
+5. Run the relevant test or check.
+6. Mark the task complete only if the result passes.
+7. Stop if the change is blocked, complete, unclear, or over the step cap.
+
+That is an agent because the next action depends on intermediate results.
+
+Bad:
+
+- One giant prompt that says "implement the next task, fix anything broken, keep going until done, and tell me if you got confused."
+
+Good:
+
+- One controller loop with explicit state, explicit stop conditions, and a small tool set.
+
+Typical stop conditions are boring on purpose:
+
+- all tasks complete
+- a test failed and needs human judgment
+- the task description is ambiguous
+- the step cap or cost budget was reached
+
+Boring stop conditions are underrated. They are also how the system eventually stops.
 
 ---
 
@@ -205,6 +258,32 @@ Good:
 
 Without traces, you are debugging folklore.
 
+For the example above, a useful trace is not literary:
+
+```text
+step=1 tool=openspec.status result=ready
+step=2 tool=read_context_files result=4 files
+step=3 tool=edit_code result=src/main/java/.../AuditService.java
+step=4 tool=run_tests result=1 failed
+step=5 status=paused reason=test_failure
+```
+
+That is enough to tell you what happened without pretending the agent had a rich inner life.
+
+---
+
+## Where Multi-Agent and Harness Enter
+
+Once one bounded loop is doing useful work, there are two common reasons to add more structure.
+
+Use a multi-agent workflow when you want separate bounded roles, such as implementation plus review, or parallel
+exploration plus synthesis.
+
+Use harness engineering when the surrounding system becomes load-bearing: state handoff, retries, evaluators,
+observability, browser checks, repo-local docs, and operational limits.
+
+The next two chapters follow exactly that path.
+
 ---
 
 ## Practical Posture
@@ -230,7 +309,7 @@ costs.
 
 ## Navigation
 
-[⬅ Tools](../11_tools/README.md) | [🏠 Home](../README.md)
+[⬅ Skills](../11_skills/README.md) | [🏠 Home](../README.md) | [Multi-Agent Workflow ➡](../13_multiagent_workflow/README.md)
 
 [1]: https://arxiv.org/abs/2210.03629
 

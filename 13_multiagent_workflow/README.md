@@ -71,7 +71,7 @@ coordination overhead [6]. That is a useful correction to the instinct to parall
 
 At the highest level, a practical multi-agent workflow looks like this.
 
-~~~mermaid
+```mermaid
 flowchart TD
     U[User goal] --> O[Coordinator or planner]
     O --> P1[Research agent]
@@ -89,7 +89,7 @@ flowchart TD
     O --> D{Done?}
     D -->|No| O
     D -->|Yes| R[Final result]
-~~~
+```
 
 The coordinator keeps the scarce context:
 
@@ -187,7 +187,7 @@ Examples:
 
 This is usually the practical answer.
 
-~~~mermaid
+```mermaid
 flowchart LR
     G[Goal] --> P[Planner]
     P --> R1[Research worker A]
@@ -201,7 +201,7 @@ flowchart LR
     E --> F{Pass?}
     F -->|No| B
     F -->|Yes| OUT[Final output]
-~~~
+```
 
 That structure keeps parallelism where it helps and sequence where it is required.
 
@@ -294,7 +294,7 @@ This is not just about cost. It is also about behavior. Planning and execution a
 
 Suppose the goal is:
 
-~Add audit logging to a service, update tests, and review the result for security and maintainability.~
+`Add audit logging to a service, update tests, and review the result for security and maintainability.`
 
 A practical multi-agent workflow could look like this.
 
@@ -355,7 +355,7 @@ The coordinator decides:
 - loop the builder again if necessary
 - stop when the result passes the agreed bar
 
-~~~mermaid
+```mermaid
 sequenceDiagram
     participant User
     participant Coord as Coordinator
@@ -380,7 +380,7 @@ sequenceDiagram
     Eval1-->>Coord: Findings
     Eval2-->>Coord: Findings
     Coord-->>User: Final result or next revision
-~~~
+```
 
 This is already enough workflow for most teams. You do not need an inner council of eight debating whether the log line
 is spiritually correct.
@@ -509,7 +509,7 @@ Which, admittedly, makes it feel even more like software engineering.
 
 ## Navigation
 
-[⬅ OpenClaw](../14_openclaw/README.md) | [🏠 Home](../README.md)
+[⬅ Agents](../12_agents/README.md) | [🏠 Home](../README.md) | [Harness Engineering ➡](../14_harness_engineering/README.md)
 
 [1]: https://www.anthropic.com/research/building-effective-agents
 

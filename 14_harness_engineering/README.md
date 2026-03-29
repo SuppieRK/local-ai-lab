@@ -180,7 +180,7 @@ The dry operational truth is that agents respect whatever fails the build.
 
 Bad:
 
-- Write ~please keep the architecture clean~ in a long prompt and hope for the best.
+- Write `please keep the architecture clean` in a long prompt and hope for the best.
 
 Good:
 
@@ -200,9 +200,9 @@ Common patterns include:
 
 Anthropic's experience is instructive here: some decomposition patterns were essential for weaker or earlier model behavior, then became removable overhead as newer models improved [2].
 
-So the right question is not, ~What is the most advanced harness we can imagine?~
+So the right question is not, `What is the most advanced harness we can imagine?`
 
-It is, ~Which parts are still load-bearing for this model and this task?~
+It is, `Which parts are still load-bearing for this model and this task?`
 
 That is less cinematic, but it generally ships better.
 
@@ -359,13 +359,13 @@ Harness engineering is the discipline of making agentic systems operationally re
 
 It matters because long-running applications fail less from lack of raw model intelligence than from lack of structure around that intelligence. The hard part is not only getting the model to act. It is getting the whole system to remain coherent, testable, bounded, and inspectable over time.
 
-That sounds less magical than ~just let the model code.~ It is also how you end up with software instead of a demo and a troubling cloud bill [1][2].
+That sounds less magical than `just let the model code.` It is also how you end up with software instead of a demo and a troubling cloud bill [1][2].
 
 ---
 
 ## Navigation
 
-[⬅ Agents](../12_agents/README.md) | [🏠 Home](../README.md)
+[⬅ Multi-Agent Workflow](../13_multiagent_workflow/README.md) | [🏠 Home](../README.md) | [OpenClaw ➡](../15_openclaw/README.md)
 
 [1]: https://openai.com/index/harness-engineering/
 
